@@ -2,6 +2,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { site } from "@/config/site";
 import { EditionBadge } from "@/features/docs/components/edition-badge";
@@ -43,7 +44,29 @@ export async function generateMetadata({
   };
 }
 
-export default async function DocPage({ params }: PageProps<"/[locale]/[...slug]">) {
+// The page reads its URL inside Suspense, so the App Shell (header, footer, this grid) is shared
+// by every docs link and a navigation paints at once. Prerendered pages still ship complete HTML.
+export default function DocPage({ params }: PageProps<"/[locale]/[...slug]">) {
+  return (
+    <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+      <Suspense fallback={<DocSkeleton />}>
+        <DocContent params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+function DocSkeleton() {
+  return (
+    <div className="grid max-w-3xl animate-pulse content-start gap-3 lg:col-start-2">
+      <div className="h-5 w-32 rounded-md bg-muted" />
+      <div className="h-9 w-2/3 rounded-md bg-muted" />
+      <div className="h-6 w-full rounded-md bg-muted" />
+    </div>
+  );
+}
+
+async function DocContent({ params }: Pick<PageProps<"/[locale]/[...slug]">, "params">) {
   const { locale: param, slug: parts } = await params;
   const slug = parts.join("/");
   if (!isPageSlug(slug)) notFound();
@@ -64,7 +87,7 @@ export default async function DocPage({ params }: PageProps<"/[locale]/[...slug]
   const nav = <DocsNav sections={sections} current={slug} />;
 
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <>
       <aside className="hidden lg:block">
         <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pb-8">{nav}</div>
       </aside>
@@ -111,6 +134,6 @@ export default async function DocPage({ params }: PageProps<"/[locale]/[...slug]
           </nav>
         </footer>
       </article>
-    </div>
+    </>
   );
 }
