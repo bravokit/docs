@@ -22,7 +22,7 @@ export const SECTIONS = [
     pages: ["introduction", "choosing-an-edition", "quick-start", "project-structure"],
   },
   { id: "pro", pages: ["modules"] },
-  { id: "reference", pages: ["commands"] },
+  { id: "reference", pages: ["commands", "environment-variables"] },
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]["id"];

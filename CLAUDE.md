@@ -93,6 +93,34 @@ Organize by what a reader is trying to do, not by folder:
 - **Reference**: commands, environment variables, a changelog per edition.
 
 A new product feature or module gets its page in the same change that documents its release.
+`SECTIONS` in `src/features/docs/pages.ts` is what exists today; the list above is the plan, and
+most of it is still to write. Before writing a guide, check whether a reference page already
+covers its settings or commands, and link to it.
+
+### Reference pages
+
+Reference pages are the one place each setting and command is explained, so a product change is
+fixed once, not in every guide that mentions it.
+
+- **Every item says what it's for**, not only its name: its purpose, default, when it's required
+  (and by which other setting), accepted values, and what goes wrong when it's wrong. The
+  environment variables page is the model.
+- Guides link to the reference for the full list and show only the few values their steps set.
+- `pnpm check:products` compares the environment variable and command references with each
+  product's latest release tag (`.env.example`, `package.json` scripts), in both directions, and
+  lists every page checked against an older release. It reads the product checkouts, so it runs
+  locally, not in CI (paths in `CLAUDE.local.md`). A new reference page that lists product items
+  gets a comparison there in the same change.
+
+### When a product releases
+
+1. Run `pnpm check:products`. It names the pages behind and the items added or removed.
+2. Read the release's CHANGELOG entry and upgrade notes, then each listed page against the code
+   at that tag (`git show v1.1.0:<path>`), never the working tree: the products' `main` holds
+   unreleased changes, which aren't documented.
+3. Update the pages in both languages and raise their `checked` versions. A page that needed no
+   change still gets its version raised, since it was checked.
+4. `pnpm check:products` passes, then the quality gates below.
 
 ### Every page
 
@@ -162,6 +190,11 @@ Playwright, pnpm, Node 22.12+.
   page to `[locale]/page-not-found` (prerendered as a 404). Don't rely on the docs route's own
   `notFound()` for the status: it streams a prerendered shell first, which has already answered 200. Neither `instant = false`, nor turning off `partialPrefetching` (deprecated), nor setting a
   status on the proxy's response fixes that. `e2e/pages.spec.ts` checks the status.
+- **`params` are read inside `<Suspense>`.** With `partialPrefetching`, every link to a route
+  shares one App Shell, so awaiting `params` at the top of a page makes `next dev` report "URL
+  data outside of Suspense". The docs route passes the `params` promise to a child inside
+  `<Suspense>` (Next's "Stream" fix); `instant = false` would silence it by making every docs
+  navigation wait. `generateMetadata` may await `params`.
 - Links between pages are root paths without the language (`/start/quick-start`): they keep the
   reader's language. How Markdown renders, and the components pages use without importing, are
   in `src/mdx-components.tsx`.
@@ -191,6 +224,7 @@ Playwright, pnpm, Node 22.12+.
 - Playwright opens every page in both languages, at desktop and phone width, light and dark: no
   console errors, no horizontal scrolling, and a page found from the navigation as well as by
   URL.
+- `pnpm check:products` passes when a reference page or a `checked` version changed.
 - Every command and step on a changed page has been run against a current checkout of the
   edition it documents, or the report says which ones weren't.
 - Report what you verified and what you didn't; quote actual output rather than "should work".

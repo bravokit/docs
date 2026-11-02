@@ -1,0 +1,242 @@
+export const meta = {
+  title: "Environment variables",
+  description:
+    "Every setting Kitewell and Kitewell Pro read from the environment: what each one is for, its default, and when it's required.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+The app reads its settings from environment variables: from `.env` on your computer, and from your
+host's settings in production. `.env.example` lists every one with a short comment; this page
+explains what each is for and how they depend on each other.
+
+## How the app reads them
+
+- **Checked at startup.** `pnpm dev`, `pnpm build` and `pnpm start` validate every variable and
+  refuse to run while one is wrong, listing every problem at once. The rules are in
+  `src/lib/env-schema.ts`, the only place a variable is declared.
+- **Empty means unset.** `STRIPE_SECRET_KEY=` in `.env` is the same as leaving the line out, so
+  the default applies or the variable counts as missing.
+- **Set them before you build.** The build checks them too, so a deployment needs its variables
+  in the build step as well as on the running server.
+- **One value per environment.** Development, staging and production each get their own secrets,
+  databases and keys. Never copy development's `BETTER_AUTH_SECRET` to production.
+
+The smallest production setup is `NEXT_PUBLIC_APP_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, a
+real billing provider and a real email transport. Everything else has a default or is optional.
+
+## App and database
+
+| Variable              | Default          | What it's for                                                                                                                                                 |
+| --------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL` | required         | The app's public address, such as `https://app.example.com`. Links in emails, sign-in callbacks and share metadata are built from it.                         |
+| `DATABASE_URL`        | required         | The PostgreSQL connection URL (`postgres://` or `postgresql://`). Locally it's the Docker database; in production, your provider's URL (Neon, Supabase, RDS). |
+| `POSTGRES_USER`       | `kitewell`       | Used only by `docker-compose.yml` to create the local database. Keep it the same as in `DATABASE_URL`.                                                        |
+| `POSTGRES_PASSWORD`   | `kitewell`       | As above: the local database's password.                                                                                                                      |
+| `POSTGRES_DB`         | `kitewell`       | As above: the local database's name.                                                                                                                          |
+| `POSTGRES_PORT`       | `5432`           | As above: the port Docker publishes. Change it, and the port in `DATABASE_URL`, when another PostgreSQL already uses 5432.                                    |
+| `NODE_ENV`            | set by the tools | Set by `next dev`, `next build` and the tests. Don't set it yourself.                                                                                         |
+| `VERCEL`              | set by Vercel    | Tells the app it runs on Vercel, where `JOBS_RUNNER` must be `cron`. Don't set it yourself.                                                                   |
+
+Locally, write `127.0.0.1` rather than `localhost` in `DATABASE_URL`: on some machines `localhost`
+resolves only to the IPv6 address `::1`, which Docker's PostgreSQL doesn't answer.
+
+## Sign-in
+
+| Variable               | Default  | What it's for                                                                                                      |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET`   | required | Signs session cookies and tokens. At least 32 characters. Changing it signs everyone out.                          |
+| `GOOGLE_CLIENT_ID`     | none     | With `GOOGLE_CLIENT_SECRET`, shows **Continue with Google** on the sign-in and sign-up pages. Set both or neither. |
+| `GOOGLE_CLIENT_SECRET` | none     | The secret of the same Google OAuth client.                                                                        |
+| `GITHUB_CLIENT_ID`     | none     | With `GITHUB_CLIENT_SECRET`, shows **Continue with GitHub**. Set both or neither.                                  |
+| `GITHUB_CLIENT_SECRET` | none     | The secret of the same GitHub OAuth app.                                                                           |
+
+Generate the secret with:
+
+```bash
+openssl rand -base64 32
+```
+
+Each sign-in provider asks for a callback URL. Register
+`<NEXT_PUBLIC_APP_URL>/api/auth/callback/google` (or `github`) with it, for every address the app
+runs on.
+
+## Email
+
+| Variable          | Default                          | What it's for                                                                                                                                   |
+| ----------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EMAIL_TRANSPORT` | `outbox`                         | How emails leave the app: `outbox` writes them to `.outbox/` (development only), `smtp` sends through any SMTP server, `resend` through Resend. |
+| `EMAIL_FROM`      | `Kitewell <noreply@example.com>` | The sender recipients see. Most SMTP providers require the address you sign in with; Resend requires a domain you verified there.               |
+| `RESEND_API_KEY`  | none                             | Required with `EMAIL_TRANSPORT=resend`.                                                                                                         |
+
+With `EMAIL_TRANSPORT=smtp`, these describe the server and how to sign in to it:
+
+| Variable                   | Default                            | What it's for                                                                                                                        |
+| -------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `SMTP_SERVICE`             | none                               | A known provider (`qq`, `gmail`, `outlook365`, `hotmail`, `163`, about 90 in all) that fills in the host, port and security for you. |
+| `SMTP_HOST`                | none                               | The SMTP server, such as `smtp.qq.com`. Required unless `SMTP_SERVICE` is set; overrides it when both are.                           |
+| `SMTP_PORT`                | the service's port, else `587`     | `465` or `587`, as your provider says.                                                                                               |
+| `SMTP_SECURITY`            | `tls` on port 465, else `starttls` | `tls` encrypts from the start, `starttls` upgrades after connecting. Unencrypted connections are never used.                         |
+| `SMTP_AUTH`                | `password`                         | `password`, `oauth2` (Gmail, Outlook, Microsoft 365), or `none` for a relay that accepts your server without signing in.             |
+| `SMTP_USER`                | none                               | The mailbox you sign in with. Required with `password` and `oauth2`.                                                                 |
+| `SMTP_PASSWORD`            | none                               | With `password`: the password, a Gmail app password or QQ Mail's authorization code.                                                 |
+| `SMTP_OAUTH_CLIENT_ID`     | none                               | With `oauth2`: the OAuth client's ID.                                                                                                |
+| `SMTP_OAUTH_CLIENT_SECRET` | none                               | With `oauth2`: the OAuth client's secret.                                                                                            |
+| `SMTP_OAUTH_REFRESH_TOKEN` | none                               | With `oauth2`: the mailbox's refresh token, which `pnpm email:oauth google` or `microsoft` gets for you.                             |
+| `SMTP_OAUTH_TOKEN_URL`     | Google's                           | With `oauth2` and Microsoft: `https://login.microsoftonline.com/<tenant ID or consumers>/oauth2/v2.0/token`.                         |
+| `SMTP_OAUTH_SCOPE`         | none                               | With `oauth2` and Microsoft: `https://outlook.office.com/SMTP.Send offline_access`.                                                  |
+
+After changing them, send yourself a test email. It explains what went wrong when sending fails:
+
+```bash
+pnpm email:test you@example.com
+```
+
+[Kitewell's email guide](https://github.com/xieqingfu/kitewell/blob/v1.0.0/docs/email.md) has the
+settings for QQ Mail, Gmail, Outlook and Microsoft 365.
+
+## Billing
+
+| Variable                        | Default | What it's for                                                                                                                                                |
+| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `BILLING_PROVIDER`              | `local` | Who takes payments: `local` is a built-in test checkout that only works on `localhost`, `stripe` is real Stripe. A deployed app refuses to start on `local`. |
+| `STRIPE_SECRET_KEY`             | none    | Stripe's secret API key (`sk_test_...` until you go live).                                                                                                   |
+| `STRIPE_WEBHOOK_SECRET`         | none    | The signing secret of the webhook endpoint `<NEXT_PUBLIC_APP_URL>/api/billing/webhook`. The app rejects events it can't verify with it.                      |
+| `STRIPE_PRICE_PRO_MONTHLY`      | none    | The Stripe price ID (`price_...`) charged for the Pro plan, monthly.                                                                                         |
+| `STRIPE_PRICE_PRO_YEARLY`       | none    | The same, yearly.                                                                                                                                            |
+| `STRIPE_PRICE_BUSINESS_MONTHLY` | none    | The same for the Business plan, monthly.                                                                                                                     |
+| `STRIPE_PRICE_BUSINESS_YEARLY`  | none    | The same, yearly.                                                                                                                                            |
+| `STRIPE_SALES_PRICES`           | none    | Optional: prices of plans your sales team sells, as `price_id=plan` pairs separated by commas.                                                               |
+
+With `BILLING_PROVIDER=stripe`, every `STRIPE_*` variable except `STRIPE_SALES_PRICES` is required.
+Subscribe the webhook endpoint to `checkout.session.completed`, `customer.subscription.created`,
+`customer.subscription.updated`, `customer.subscription.deleted` and `invoice.payment_failed`.
+Locally, the Stripe CLI forwards events and prints a signing secret:
+
+```bash
+stripe listen --forward-to localhost:3000/api/billing/webhook
+```
+
+<Note>
+
+The prices shown in the app come from `src/lib/billing/plans.ts`, not from Stripe. When you change a price in Stripe, change it there too.
+
+</Note>
+
+## Background jobs
+
+| Variable      | Default | What it's for                                                                                                                                                      |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `JOBS_RUNNER` | `app`   | Which process handles email retries and the daily cleanup: `app` (the app server), `worker` (a separate `pnpm jobs:work` process) or `cron` (a scheduled request). |
+| `CRON_SECRET` | none    | Required with `cron`, at least 16 characters. The scheduler sends it as `Authorization: Bearer <CRON_SECRET>` to `/api/jobs/run`; Vercel Cron does it for you.     |
+
+Use `app` for `pnpm dev` and a single server, `worker` when the app runs in several containers, and
+`cron` on Vercel, where it's required.
+
+## Kitewell Pro only
+
+Each group belongs to a [Pro module](/pro/modules). Removing the module removes its variables.
+
+### Microsoft, Apple and OpenID Connect sign-in
+
+From the `enterprise-sign-in` module. Each provider's button appears when both its ID and secret
+are set; set both or neither.
+
+| Variable                  | Default                | What it's for                                                                                                      |
+| ------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `MICROSOFT_CLIENT_ID`     | none                   | The Microsoft Entra app's client ID.                                                                               |
+| `MICROSOFT_CLIENT_SECRET` | none                   | Its client secret.                                                                                                 |
+| `MICROSOFT_TENANT_ID`     | `common`               | Who may sign in: `common` (work and personal accounts), `organizations`, `consumers`, or your tenant ID or domain. |
+| `APPLE_CLIENT_ID`         | none                   | The Sign in with Apple Services ID.                                                                                |
+| `APPLE_CLIENT_SECRET`     | none                   | The secret `pnpm auth:apple-secret` creates. Apple lets it live 180 days at most, so renew it before then.         |
+| `OIDC_NAME`               | `SSO`                  | The button's label, **Continue with** and this name. At most 40 characters.                                        |
+| `OIDC_CLIENT_ID`          | none                   | The client ID at any OpenID Connect provider (Okta, Auth0, Keycloak, Authing, your company's).                     |
+| `OIDC_CLIENT_SECRET`      | none                   | Its client secret.                                                                                                 |
+| `OIDC_DISCOVERY_URL`      | none                   | Required with `OIDC_CLIENT_ID`: the provider's `.well-known/openid-configuration` URL. `https://` except locally.  |
+| `OIDC_SCOPES`             | `openid email profile` | The scopes to ask for.                                                                                             |
+
+The callback URLs are `<NEXT_PUBLIC_APP_URL>/api/auth/callback/microsoft`, `apple` and `oidc`.
+
+### Paddle
+
+From the `paddle` module, used when `BILLING_PROVIDER=paddle`. Paddle is the merchant of record:
+it sells to your customers and handles sales tax and VAT.
+
+| Variable                              | Default | What it's for                                                                                                                                          |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PADDLE_ENVIRONMENT`                  | none    | `sandbox` for testing, `production` when you go live. Keys and prices must come from the same one; the app refuses a key from the other.               |
+| `PADDLE_API_KEY`                      | none    | The server API key (`pdl_sdbx_apikey_...` or `pdl_live_apikey_...`), with write access to transactions and subscriptions and read access to customers. |
+| `PADDLE_CLIENT_TOKEN`                 | none    | The client-side token (`test_...` or `live_...`) the checkout page uses.                                                                               |
+| `PADDLE_WEBHOOK_SECRET`               | none    | The secret key of the notification destination `<NEXT_PUBLIC_APP_URL>/api/billing/webhook`.                                                            |
+| `PADDLE_PRICE_PRO_MONTHLY`            | none    | The Paddle price ID (`pri_...`) for the Pro plan, monthly. The other three are the same for yearly and the Business plan.                              |
+| `PADDLE_PRICE_PRO_YEARLY`             | none    |                                                                                                                                                        |
+| `PADDLE_PRICE_BUSINESS_MONTHLY`       | none    |                                                                                                                                                        |
+| `PADDLE_PRICE_BUSINESS_YEARLY`        | none    |                                                                                                                                                        |
+| `PADDLE_PRICE_PRO_MONTHLY_TRIAL`      | none    | Optional: the same plans' prices with a trial period, used for an organization's first subscription. All four or none; without them, no trial.         |
+| `PADDLE_PRICE_PRO_YEARLY_TRIAL`       | none    |                                                                                                                                                        |
+| `PADDLE_PRICE_BUSINESS_MONTHLY_TRIAL` | none    |                                                                                                                                                        |
+| `PADDLE_PRICE_BUSINESS_YEARLY_TRIAL`  | none    |                                                                                                                                                        |
+| `PADDLE_SALES_PRICES`                 | none    | Optional: prices of plans your sales team sells, as `price_id=plan` pairs.                                                                             |
+
+With `BILLING_PROVIDER=paddle`, every variable above except the trial and sales prices is required.
+Subscribe the notification destination to `subscription.created`, `subscription.updated`,
+`subscription.activated`, `subscription.canceled`, `subscription.past_due`, `subscription.paused`,
+`subscription.resumed`, `subscription.trialing`, `transaction.completed` and
+`transaction.payment_failed`.
+
+### File storage
+
+From the `uploads` module.
+
+| Variable               | Default | What it's for                                                                                                                     |
+| ---------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `STORAGE_PROVIDER`     | `local` | Where uploaded files go: `local` keeps them in `.storage/` and only works on `localhost`; `s3` uses any S3-compatible service.    |
+| `S3_BUCKET`            | none    | The bucket's name. Required with `s3`.                                                                                            |
+| `S3_REGION`            | `auto`  | The bucket's region on AWS (`us-east-1`, ...). Cloudflare R2 and most others take `auto`.                                         |
+| `S3_ENDPOINT`          | AWS     | Leave empty for AWS S3. R2: `https://<account id>.r2.cloudflarestorage.com`; Backblaze B2: `https://s3.<region>.backblazeb2.com`. |
+| `S3_ACCESS_KEY_ID`     | none    | The access key. Required with `s3`.                                                                                               |
+| `S3_SECRET_ACCESS_KEY` | none    | Its secret. Required with `s3`.                                                                                                   |
+| `S3_FORCE_PATH_STYLE`  | `false` | `true` for services that need the bucket in the path rather than the host name, such as MinIO.                                    |
+
+### Outgoing webhooks
+
+From the `webhooks` module.
+
+| Variable                     | Default | What it's for                                                                                                                    |
+| ---------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `WEBHOOK_RETRY_BASE_SECONDS` | `30`    | Seconds before the first retry of a failed delivery; later retries wait 3 and 9 times as long. Leave it unless you test retries. |
+
+### Usage and credit packs
+
+From the `usage` module. Without a pack's price, buying that pack fails with a message naming the
+variable.
+
+| Variable                                | Default | What it's for                                                                                                   |
+| --------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_PRICE_CREDITS_API_REQUESTS_10K` | none    | The one-time Stripe price of the 10,000 API requests credit pack.                                               |
+| `PADDLE_PRICE_CREDITS_API_REQUESTS_10K` | none    | The same pack's Paddle price.                                                                                   |
+| `PADDLE_PRICE_OVERAGE_API_REQUESTS`     | none    | Paddle only: the price of 1,000 API requests beyond the plan, charged with the next renewal. Stripe needs none. |
+
+## When the app won't start
+
+The error lists every variable that's wrong and why:
+
+```text
+Invalid environment variables:
+✖ is required when BILLING_PROVIDER=stripe
+  → at STRIPE_SECRET_KEY
+Copy .env.example to .env and fill in the missing values.
+```
+
+- **`is 'local', which only works on localhost`**: the app runs on a real address with the test
+  billing provider (or, in Pro, local file storage). Set `BILLING_PROVIDER=stripe` (or `paddle`),
+  and in Pro `STORAGE_PROVIDER=s3`.
+- **`set both ..._CLIENT_ID and ..._CLIENT_SECRET, or neither`**: a sign-in provider is half set
+  up. Fill in the other half, or empty both to hide its button.
+- **`must be 'cron' on Vercel`**: set `JOBS_RUNNER=cron` and a `CRON_SECRET`.
+- **A variable you set isn't seen**: check that it isn't empty, that its name has no typo, and,
+  in production, that the build step has it too.
+
+## Next
+
+See what each command does in the [command reference](/reference/commands).

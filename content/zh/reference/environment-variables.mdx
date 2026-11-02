@@ -1,0 +1,230 @@
+export const meta = {
+  title: "环境变量",
+  description:
+    "Kitewell 和 Kitewell Pro 从环境中读取的每一项配置：它的用途、默认值，以及什么时候必须填写。",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+应用的配置来自环境变量：在你的电脑上来自 `.env`，在生产环境来自托管平台的设置。`.env.example`
+列出了每一个变量并附有简短注释；本页说明每个变量的用途，以及它们之间的依赖关系。
+
+## 应用如何读取它们
+
+- **启动时检查。** `pnpm dev`、`pnpm build` 和 `pnpm start` 会校验每个变量，只要有一个不对就拒绝运行，
+  并一次列出所有问题。规则在 `src/lib/env-schema.ts` 中，这也是声明变量的唯一位置。
+- **空值等于未设置。** `.env` 中的 `STRIPE_SECRET_KEY=` 和不写这一行效果相同：使用默认值，或视为缺失。
+- **构建前就要设置。** 构建时同样会检查变量，所以部署时构建步骤和运行中的服务器都需要这些变量。
+- **每个环境一套值。** 开发、预发布和生产环境各自使用自己的密钥、数据库和 key。不要把开发环境的
+  `BETTER_AUTH_SECRET` 复制到生产环境。
+
+生产环境最少需要：`NEXT_PUBLIC_APP_URL`、`DATABASE_URL`、`BETTER_AUTH_SECRET`、一个真实的计费服务和一个真实的邮件发送方式。其余变量都有默认值或可选。
+
+## 应用与数据库
+
+| 变量                  | 默认值         | 用途                                                                                                                                   |
+| --------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL` | 必填           | 应用的公开地址，例如 `https://app.example.com`。邮件中的链接、登录回调和分享元数据都由它生成。                                         |
+| `DATABASE_URL`        | 必填           | PostgreSQL 连接 URL（`postgres://` 或 `postgresql://`）。本地是 Docker 中的数据库；生产环境用服务商提供的 URL（Neon、Supabase、RDS）。 |
+| `POSTGRES_USER`       | `kitewell`     | 只供 `docker-compose.yml` 创建本地数据库使用。与 `DATABASE_URL` 中的保持一致。                                                         |
+| `POSTGRES_PASSWORD`   | `kitewell`     | 同上：本地数据库的密码。                                                                                                               |
+| `POSTGRES_DB`         | `kitewell`     | 同上：本地数据库的名称。                                                                                                               |
+| `POSTGRES_PORT`       | `5432`         | 同上：Docker 对外暴露的端口。当另一个 PostgreSQL 已占用 5432 时，修改它以及 `DATABASE_URL` 中的端口。                                  |
+| `NODE_ENV`            | 由工具设置     | 由 `next dev`、`next build` 和测试设置。不要自己设置。                                                                                 |
+| `VERCEL`              | 由 Vercel 设置 | 告诉应用它运行在 Vercel 上，此时 `JOBS_RUNNER` 必须是 `cron`。不要自己设置。                                                           |
+
+在本地，`DATABASE_URL` 中请写 `127.0.0.1` 而不是 `localhost`：在某些机器上 `localhost` 只解析为 IPv6
+地址 `::1`，而 Docker 的 PostgreSQL 不响应它。
+
+## 登录
+
+| 变量                   | 默认值 | 用途                                                                                              |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`   | 必填   | 为会话 Cookie 和令牌签名。至少 32 个字符。修改它会让所有人退出登录。                              |
+| `GOOGLE_CLIENT_ID`     | 无     | 与 `GOOGLE_CLIENT_SECRET` 一起设置后，登录和注册页会显示 **使用 Google 继续**。两个都设或都不设。 |
+| `GOOGLE_CLIENT_SECRET` | 无     | 同一个 Google OAuth 客户端的密钥。                                                                |
+| `GITHUB_CLIENT_ID`     | 无     | 与 `GITHUB_CLIENT_SECRET` 一起设置后，显示 **使用 GitHub 继续**。两个都设或都不设。               |
+| `GITHUB_CLIENT_SECRET` | 无     | 同一个 GitHub OAuth 应用的密钥。                                                                  |
+
+用下面的命令生成密钥：
+
+```bash
+openssl rand -base64 32
+```
+
+每个登录服务商都会要求填写回调 URL。为应用运行的每个地址注册
+`<NEXT_PUBLIC_APP_URL>/api/auth/callback/google`（或 `github`）。
+
+## 邮件
+
+| 变量              | 默认值                           | 用途                                                                                                               |
+| ----------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `EMAIL_TRANSPORT` | `outbox`                         | 邮件如何发出：`outbox` 写入 `.outbox/`（仅用于开发），`smtp` 通过任意 SMTP 服务器发送，`resend` 通过 Resend 发送。 |
+| `EMAIL_FROM`      | `Kitewell <noreply@example.com>` | 收件人看到的发件人。大多数 SMTP 服务商要求它就是你登录用的地址；Resend 要求使用你在那里验证过的域名。              |
+| `RESEND_API_KEY`  | 无                               | `EMAIL_TRANSPORT=resend` 时必填。                                                                                  |
+
+当 `EMAIL_TRANSPORT=smtp` 时，下面这些变量描述服务器以及如何登录：
+
+| 变量                       | 默认值                              | 用途                                                                                                          |
+| -------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `SMTP_SERVICE`             | 无                                  | 一个已知服务商（`qq`、`gmail`、`outlook365`、`hotmail`、`163`，共约 90 个），会自动填好主机、端口和加密方式。 |
+| `SMTP_HOST`                | 无                                  | SMTP 服务器，例如 `smtp.qq.com`。未设置 `SMTP_SERVICE` 时必填；两者都设置时以它为准。                         |
+| `SMTP_PORT`                | 服务商的端口，否则为 `587`          | `465` 或 `587`，以服务商说明为准。                                                                            |
+| `SMTP_SECURITY`            | 465 端口为 `tls`，否则为 `starttls` | `tls` 从一开始就加密，`starttls` 在连接后升级为加密。从不使用未加密的连接。                                   |
+| `SMTP_AUTH`                | `password`                          | `password`、`oauth2`（Gmail、Outlook、Microsoft 365），或 `none`（无需登录即可接受你服务器的中继）。          |
+| `SMTP_USER`                | 无                                  | 登录用的邮箱。`password` 和 `oauth2` 时必填。                                                                 |
+| `SMTP_PASSWORD`            | 无                                  | `password` 时：密码、Gmail 应用专用密码或 QQ 邮箱的授权码。                                                   |
+| `SMTP_OAUTH_CLIENT_ID`     | 无                                  | `oauth2` 时：OAuth 客户端的 ID。                                                                              |
+| `SMTP_OAUTH_CLIENT_SECRET` | 无                                  | `oauth2` 时：OAuth 客户端的密钥。                                                                             |
+| `SMTP_OAUTH_REFRESH_TOKEN` | 无                                  | `oauth2` 时：邮箱的刷新令牌，可以用 `pnpm email:oauth google` 或 `microsoft` 获取。                           |
+| `SMTP_OAUTH_TOKEN_URL`     | Google 的地址                       | `oauth2` 且使用 Microsoft 时：`https://login.microsoftonline.com/<租户 ID 或 consumers>/oauth2/v2.0/token`。  |
+| `SMTP_OAUTH_SCOPE`         | 无                                  | `oauth2` 且使用 Microsoft 时：`https://outlook.office.com/SMTP.Send offline_access`。                         |
+
+修改之后，给自己发一封测试邮件。发送失败时，它会说明哪里出了问题：
+
+```bash
+pnpm email:test you@example.com
+```
+
+[Kitewell 的邮件指南](https://github.com/xieqingfu/kitewell/blob/v1.0.0/docs/email.md)列出了 QQ 邮箱、Gmail、Outlook 和 Microsoft 365 的设置。
+
+## 计费
+
+| 变量                            | 默认值  | 用途                                                                                                                           |
+| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BILLING_PROVIDER`              | `local` | 由谁收款：`local` 是内置的测试结账，只能在 `localhost` 使用；`stripe` 是真实的 Stripe。已部署的应用设为 `local` 时会拒绝启动。 |
+| `STRIPE_SECRET_KEY`             | 无      | Stripe 的密钥（上线前用 `sk_test_...`）。                                                                                      |
+| `STRIPE_WEBHOOK_SECRET`         | 无      | Webhook 端点 `<NEXT_PUBLIC_APP_URL>/api/billing/webhook` 的签名密钥。应用会拒绝无法用它验证的事件。                            |
+| `STRIPE_PRICE_PRO_MONTHLY`      | 无      | Pro 套餐按月收费的 Stripe 价格 ID（`price_...`）。                                                                             |
+| `STRIPE_PRICE_PRO_YEARLY`       | 无      | 同上，按年。                                                                                                                   |
+| `STRIPE_PRICE_BUSINESS_MONTHLY` | 无      | Business 套餐，按月。                                                                                                          |
+| `STRIPE_PRICE_BUSINESS_YEARLY`  | 无      | 同上，按年。                                                                                                                   |
+| `STRIPE_SALES_PRICES`           | 无      | 可选：由销售团队售卖的套餐价格，格式为用逗号分隔的 `price_id=plan`。                                                           |
+
+当 `BILLING_PROVIDER=stripe` 时，除 `STRIPE_SALES_PRICES` 外的所有 `STRIPE_*` 变量都必填。
+Webhook 端点需要订阅 `checkout.session.completed`、`customer.subscription.created`、
+`customer.subscription.updated`、`customer.subscription.deleted` 和 `invoice.payment_failed`。
+在本地，Stripe CLI 会转发事件并打印签名密钥：
+
+```bash
+stripe listen --forward-to localhost:3000/api/billing/webhook
+```
+
+<Note>
+
+应用中显示的价格来自 `src/lib/billing/plans.ts`，而不是 Stripe。在 Stripe 中修改价格时，也要同步修改这里。
+
+</Note>
+
+## 后台任务
+
+| 变量          | 默认值 | 用途                                                                                                                         |
+| ------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `JOBS_RUNNER` | `app`  | 由哪个进程处理邮件重试和每日清理：`app`（应用服务器本身）、`worker`（单独的 `pnpm jobs:work` 进程）或 `cron`（定时请求）。   |
+| `CRON_SECRET` | 无     | `cron` 时必填，至少 16 个字符。定时器以 `Authorization: Bearer <CRON_SECRET>` 调用 `/api/jobs/run`；Vercel Cron 会自动带上。 |
+
+`pnpm dev` 和单台服务器用 `app`，应用运行在多个容器中时用 `worker`，在 Vercel 上用 `cron`（必须）。
+
+## 仅 Kitewell Pro
+
+每组变量属于一个 [Pro 模块](/pro/modules)。移除模块时，它的变量也会一并移除。
+
+### Microsoft、Apple 和 OpenID Connect 登录
+
+属于 `enterprise-sign-in` 模块。每个服务商的 ID 和密钥都设置后，才会显示它的按钮；两个都设或都不设。
+
+| 变量                      | 默认值                 | 用途                                                                                                       |
+| ------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `MICROSOFT_CLIENT_ID`     | 无                     | Microsoft Entra 应用的客户端 ID。                                                                          |
+| `MICROSOFT_CLIENT_SECRET` | 无                     | 它的客户端密钥。                                                                                           |
+| `MICROSOFT_TENANT_ID`     | `common`               | 谁可以登录：`common`（工作和个人账号）、`organizations`、`consumers`，或你的租户 ID 或域名。               |
+| `APPLE_CLIENT_ID`         | 无                     | Sign in with Apple 的 Services ID。                                                                        |
+| `APPLE_CLIENT_SECRET`     | 无                     | 由 `pnpm auth:apple-secret` 生成的密钥。Apple 规定它最长有效 180 天，请在到期前更新。                      |
+| `OIDC_NAME`               | `SSO`                  | 按钮上显示的名称，即 **使用** 后面的名字。最多 40 个字符。                                                 |
+| `OIDC_CLIENT_ID`          | 无                     | 任意 OpenID Connect 服务商（Okta、Auth0、Keycloak、Authing、公司自有）的客户端 ID。                        |
+| `OIDC_CLIENT_SECRET`      | 无                     | 它的客户端密钥。                                                                                           |
+| `OIDC_DISCOVERY_URL`      | 无                     | 设置 `OIDC_CLIENT_ID` 时必填：服务商的 `.well-known/openid-configuration` URL。除本地外必须是 `https://`。 |
+| `OIDC_SCOPES`             | `openid email profile` | 要请求的权限范围。                                                                                         |
+
+回调 URL 分别是 `<NEXT_PUBLIC_APP_URL>/api/auth/callback/microsoft`、`apple` 和 `oidc`。
+
+### Paddle
+
+属于 `paddle` 模块，在 `BILLING_PROVIDER=paddle` 时使用。Paddle 是记录商户（merchant of record）：
+由它向你的客户销售，并处理销售税和增值税。
+
+| 变量                                  | 默认值 | 用途                                                                                                         |
+| ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
+| `PADDLE_ENVIRONMENT`                  | 无     | 测试用 `sandbox`，上线用 `production`。key 和价格必须来自同一个环境；应用会拒绝另一个环境的 key。            |
+| `PADDLE_API_KEY`                      | 无     | 服务器 API key（`pdl_sdbx_apikey_...` 或 `pdl_live_apikey_...`），需要交易和订阅的写权限，以及客户的读权限。 |
+| `PADDLE_CLIENT_TOKEN`                 | 无     | 结账页面使用的客户端令牌（`test_...` 或 `live_...`）。                                                       |
+| `PADDLE_WEBHOOK_SECRET`               | 无     | 通知目标 `<NEXT_PUBLIC_APP_URL>/api/billing/webhook` 的密钥。                                                |
+| `PADDLE_PRICE_PRO_MONTHLY`            | 无     | Pro 套餐按月的 Paddle 价格 ID（`pri_...`）。其余三个分别对应按年和 Business 套餐。                           |
+| `PADDLE_PRICE_PRO_YEARLY`             | 无     |                                                                                                              |
+| `PADDLE_PRICE_BUSINESS_MONTHLY`       | 无     |                                                                                                              |
+| `PADDLE_PRICE_BUSINESS_YEARLY`        | 无     |                                                                                                              |
+| `PADDLE_PRICE_PRO_MONTHLY_TRIAL`      | 无     | 可选：同样套餐带试用期的价格，用于组织的第一次订阅。四个都设或都不设；不设置时没有试用。                     |
+| `PADDLE_PRICE_PRO_YEARLY_TRIAL`       | 无     |                                                                                                              |
+| `PADDLE_PRICE_BUSINESS_MONTHLY_TRIAL` | 无     |                                                                                                              |
+| `PADDLE_PRICE_BUSINESS_YEARLY_TRIAL`  | 无     |                                                                                                              |
+| `PADDLE_SALES_PRICES`                 | 无     | 可选：由销售团队售卖的套餐价格，格式为 `price_id=plan`。                                                     |
+
+当 `BILLING_PROVIDER=paddle` 时，上表中除试用价格和销售价格外的变量都必填。
+通知目标需要订阅 `subscription.created`、`subscription.updated`、`subscription.activated`、
+`subscription.canceled`、`subscription.past_due`、`subscription.paused`、`subscription.resumed`、
+`subscription.trialing`、`transaction.completed` 和 `transaction.payment_failed`。
+
+### 文件存储
+
+属于 `uploads` 模块。
+
+| 变量                   | 默认值  | 用途                                                                                                                    |
+| ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `STORAGE_PROVIDER`     | `local` | 上传文件存放的位置：`local` 存在 `.storage/` 中，只能在 `localhost` 使用；`s3` 使用任意兼容 S3 的服务。                 |
+| `S3_BUCKET`            | 无      | 存储桶名称。`s3` 时必填。                                                                                               |
+| `S3_REGION`            | `auto`  | AWS 上存储桶所在的区域（`us-east-1` 等）。Cloudflare R2 和大多数其他服务用 `auto`。                                     |
+| `S3_ENDPOINT`          | AWS     | AWS S3 留空。R2：`https://<account id>.r2.cloudflarestorage.com`；Backblaze B2：`https://s3.<region>.backblazeb2.com`。 |
+| `S3_ACCESS_KEY_ID`     | 无      | 访问密钥。`s3` 时必填。                                                                                                 |
+| `S3_SECRET_ACCESS_KEY` | 无      | 它的私密部分。`s3` 时必填。                                                                                             |
+| `S3_FORCE_PATH_STYLE`  | `false` | 对需要把存储桶名放在路径而不是主机名中的服务（例如 MinIO）设为 `true`。                                                 |
+
+### 外发 Webhook
+
+属于 `webhooks` 模块。
+
+| 变量                         | 默认值 | 用途                                                                                           |
+| ---------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `WEBHOOK_RETRY_BASE_SECONDS` | `30`   | 投递失败后第一次重试前等待的秒数；之后的重试分别等待 3 倍和 9 倍。除非要测试重试，否则不用改。 |
+
+### 用量与额度包
+
+属于 `usage` 模块。某个额度包没有设置价格时，购买它会失败，并提示缺少的变量名。
+
+| 变量                                    | 默认值 | 用途                                                                             |
+| --------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| `STRIPE_PRICE_CREDITS_API_REQUESTS_10K` | 无     | 10,000 次 API 请求额度包的一次性 Stripe 价格。                                   |
+| `PADDLE_PRICE_CREDITS_API_REQUESTS_10K` | 无     | 同一额度包的 Paddle 价格。                                                       |
+| `PADDLE_PRICE_OVERAGE_API_REQUESTS`     | 无     | 仅 Paddle：超出套餐的每 1,000 次 API 请求的价格，随下次续费收取。Stripe 不需要。 |
+
+## 应用无法启动时
+
+错误信息会列出每个有问题的变量及原因：
+
+```text
+Invalid environment variables:
+✖ is required when BILLING_PROVIDER=stripe
+  → at STRIPE_SECRET_KEY
+Copy .env.example to .env and fill in the missing values.
+```
+
+- **`is 'local', which only works on localhost`**：应用运行在真实地址上，却使用了测试计费（在 Pro
+  中也可能是本地文件存储）。设置 `BILLING_PROVIDER=stripe`（或 `paddle`），在 Pro 中还要设置
+  `STORAGE_PROVIDER=s3`。
+- **`set both ..._CLIENT_ID and ..._CLIENT_SECRET, or neither`**：某个登录服务商只配置了一半。补上另一半，
+  或者两个都清空以隐藏它的按钮。
+- **`must be 'cron' on Vercel`**：设置 `JOBS_RUNNER=cron` 和 `CRON_SECRET`。
+- **设置了变量却没有生效**：检查它不是空值、名字没有拼错，以及在生产环境中构建步骤也有这个变量。
+
+## 下一步
+
+在[命令参考](/reference/commands)中查看每个命令的作用。

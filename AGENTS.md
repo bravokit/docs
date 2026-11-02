@@ -8,6 +8,8 @@ repository's rules for every coding agent, not only Claude. Above all:
   repository. Pro pages explain features and setup; they don't reproduce Pro.
 - Check every command, variable, default and label against the product's current code and
   CHANGELOG before writing it. The products are the source of truth, never this site.
+- Document the latest release tag, not the products' `main`, and run `pnpm check:products` after
+  changing a reference page or a page's `checked` version.
 - Every page exists in English and Simplified Chinese, published together.
 
 <!-- BEGIN:nextjs-agent-rules -->

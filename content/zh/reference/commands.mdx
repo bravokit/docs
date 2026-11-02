@@ -20,12 +20,14 @@ export const meta = {
 
 ## 检查与测试
 
-| 命令            | 作用                                             |
-| --------------- | ------------------------------------------------ |
-| `pnpm check`    | 类型检查、lint、格式检查和单元测试               |
-| `pnpm test`     | 单元测试（Vitest）                               |
-| `pnpm test:e2e` | 端到端测试（Playwright；会构建应用，需要数据库） |
-| `pnpm format`   | 用 Prettier 格式化所有文件                       |
+| 命令                | 作用                                             |
+| ------------------- | ------------------------------------------------ |
+| `pnpm check`        | 类型检查、lint、格式检查和单元测试               |
+| `pnpm test`         | 单元测试（Vitest）                               |
+| `pnpm test:watch`   | 单元测试，文件修改后自动重新运行                 |
+| `pnpm test:e2e`     | 端到端测试（Playwright；会构建应用，需要数据库） |
+| `pnpm format`       | 用 Prettier 格式化所有文件                       |
+| `pnpm format:check` | 只检查格式、不修改文件，与 CI 相同               |
 
 ## 数据库
 
