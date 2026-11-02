@@ -1,0 +1,58 @@
+export const meta = {
+  title: "命令",
+  description: "Kitewell 和 Kitewell Pro 中的所有 pnpm 命令及其作用。",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+每个命令都在项目目录中运行。
+
+## 安装与开发
+
+| 命令                      | 作用                                       |
+| ------------------------- | ------------------------------------------ |
+| `pnpm dev:setup`          | 一次性的本地配置：`.env`、数据库、演示账号 |
+| `pnpm dev:doctor`         | 检查本地环境，并说明每个问题的修复方法     |
+| `pnpm new:feature <name>` | 复制“项目”示例，创建一个新功能             |
+| `pnpm dev`                | 启动开发服务器                             |
+| `pnpm build`              | 生产构建                                   |
+| `pnpm start`              | 运行生产构建                               |
+
+## 检查与测试
+
+| 命令            | 作用                                             |
+| --------------- | ------------------------------------------------ |
+| `pnpm check`    | 类型检查、lint、格式检查和单元测试               |
+| `pnpm test`     | 单元测试（Vitest）                               |
+| `pnpm test:e2e` | 端到端测试（Playwright；会构建应用，需要数据库） |
+| `pnpm format`   | 用 Prettier 格式化所有文件                       |
+
+## 数据库
+
+| 命令                     | 作用                                           |
+| ------------------------ | ---------------------------------------------- |
+| `pnpm db:up`             | 启动本地 PostgreSQL                            |
+| `pnpm db:down`           | 停止本地 PostgreSQL                            |
+| `pnpm db:generate`       | 根据 schema 改动生成迁移                       |
+| `pnpm db:migrate`        | 执行待处理的迁移                               |
+| `pnpm db:migrate:deploy` | 在生产环境执行迁移                             |
+| `pnpm db:seed`           | 添加演示账号（仅限本地）                       |
+| `pnpm db:studio`         | 在 Drizzle Studio 中浏览数据库                 |
+| `pnpm auth:generate`     | 修改认证插件或字段后，重新生成认证相关的数据表 |
+
+## 邮件与任务
+
+| 命令                          | 作用                                       |
+| ----------------------------- | ------------------------------------------ |
+| `pnpm email:test <to>`        | 用当前配置的发送方式发一封测试邮件         |
+| `pnpm email:oauth <provider>` | 获取 Gmail 或 Microsoft 的 OAuth2 刷新令牌 |
+| `pnpm jobs:work`              | 在独立进程中处理后台任务                   |
+
+## 仅限 Kitewell Pro
+
+| 命令                        | 作用                                             |
+| --------------------------- | ------------------------------------------------ |
+| `pnpm module:remove <name>` | 移除项目用不到的模块（[Pro 模块](/pro/modules)） |
+| `pnpm admin:grant <email>`  | 把一个账号设为运营人员，使其可以打开 `/admin`    |
+| `pnpm admin:revoke <email>` | 撤销 `admin:grant`                               |
+| `pnpm auth:apple-secret`    | 生成 Apple 登录所需的客户端密钥                  |

@@ -1,0 +1,57 @@
+export const meta = {
+  title: "What Kitewell is",
+  description:
+    "Kitewell is a Next.js starter kit for SaaS products. Here's what works out of the box, and how this documentation is organized.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+Kitewell gives you the parts every SaaS product needs, already working together: sign-in, teams,
+subscription billing, transactional email, background jobs, a dashboard and a marketing site. You
+start on the part of your product only you can build.
+
+## What works out of the box
+
+- **Sign-in**: email and password with verification and password reset, magic links, and sign-in
+  with Google or GitHub.
+- **Organizations**: owners, admins and members, email invitations, and an organization switcher.
+  Every record belongs to an organization, and every query is scoped to it.
+- **Billing**: Free, Pro and Business plans, monthly and yearly, through Stripe or a built-in
+  local test provider. Plan limits are checked on the server, and webhooks are signed and
+  processed once.
+- **Email**: templates sent through any SMTP server (QQ Mail, Gmail, Outlook, Microsoft 365 and
+  others) or Resend. Failed sends are retried.
+- **Background jobs**: a queue in your PostgreSQL database, run by the app server, a worker or a
+  cron route, with email retries and a daily cleanup.
+- **Product shell**: a responsive sidebar, dashboard, account and organization settings, dark
+  mode, and an example feature ("Projects") that shows the pattern to copy.
+- **Marketing**: landing and pricing pages, legal page templates, sitemap, robots and share image.
+- **Languages**: English and Simplified Chinese throughout, emails included.
+- **Quality**: TypeScript strict mode, a validated environment, unit tests and end-to-end tests,
+  run on GitHub Actions.
+
+It's built with Next.js 16, React 19, Tailwind CSS v4, shadcn/ui, Better Auth, Drizzle ORM,
+PostgreSQL, pg-boss, Stripe, Nodemailer, Resend, React Email and next-intl.
+
+## Two editions
+
+**Kitewell** is open source under the MIT license: a complete product you can build on and sell.
+**Kitewell Pro** is the commercial edition, built on the same code, with optional modules such as
+two-factor sign-in, an admin panel, Paddle billing, file uploads, a public API, outgoing webhooks
+and single sign-on. Everything in Kitewell is also in Pro.
+
+[Kitewell or Pro?](/start/choosing-an-edition) compares them.
+
+## How these docs are organized
+
+- **Getting started**: choose an edition, run a copy on your computer, and find your way around
+  the code.
+- **Kitewell Pro**: the Pro modules, and how to leave out the ones you don't need.
+- **Reference**: every command.
+
+Each page says at the top which editions it applies to, and at the bottom which versions it was
+checked against.
+
+## Next
+
+Run a copy on your computer with the [quick start](/start/quick-start).

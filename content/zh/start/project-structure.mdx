@@ -1,0 +1,57 @@
+export const meta = {
+  title: "项目结构",
+  description:
+    "Kitewell 的各个部分在哪里，以及让代码易于修改的几条规则：页面保持精简，功能各自独立成目录，每个第三方库只在一个目录中引入。",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+## 目录
+
+```text
+src/
+├─ app/                  只放路由；页面保持精简
+│  ├─ [locale]/          每个页面，每种语言一份（/pricing、/zh/pricing）：
+│  │  ├─ (marketing)/    首页、定价、条款、隐私
+│  │  ├─ (auth)/         登录、注册、重置密码
+│  │  ├─ (setup)/        创建或选择组织、接受邀请、/account
+│  │  ├─ (app)/          产品本身：控制台、项目、设置（需要组织）
+│  │  └─ billing/local/  BILLING_PROVIDER=local 时的测试结账页和门户
+│  └─ api/               认证接口、计费 webhook、健康检查、任务定时路由
+├─ features/<name>/      产品逻辑：actions.ts、queries.ts、components/
+├─ components/ui/        shadcn/ui 组件（可以随意修改）
+├─ config/site.ts        产品名称、公司、客服邮箱
+├─ i18n/                 语言，以及包含所有文本的消息文件
+└─ lib/
+   ├─ auth/              Better Auth 配置、会话和组织相关的辅助函数
+   ├─ billing/           套餐、权益、支付提供商、webhook
+   ├─ db/                Drizzle schema 和数据库客户端
+   ├─ email/             发送和模板
+   ├─ jobs/              后台任务：队列、邮件重试、每日清理
+   ├─ events/            recordEvent()：组织中发生了什么
+   ├─ notifications/     notify()：站内通知和邮件
+   └─ env-schema.ts      所有环境变量，启动时校验
+drizzle/                 SQL 迁移
+e2e/                     Playwright 测试
+scripts/                 setup、doctor、seed、功能、邮件、worker 和迁移脚本
+docs/                    每个领域一个页面
+```
+
+## 让代码易于修改的规则
+
+- **页面保持精简。** `src/app/` 中的页面读取会话，然后调用 `src/features/` 中对应的功能，查询、操作和组件都放在那里。
+- **每个第三方库只在一个目录中引入。** 只有 `lib/auth` 引入认证库，只有 `lib/billing` 引入支付提供商，只有 `lib/email` 引入邮件库，只有 `lib/jobs` 引入任务队列。替换其中一个只需改动一个目录。
+- **每条记录都属于一个组织。** 查询按会话中的组织过滤，从不使用浏览器传来的 ID；其他组织的记录一律视为“不存在”。
+- **“项目”是模板。** `src/features/projects` 展示了每个功能遵循的模式：`pnpm new:feature reports` 会把它复制成一个新功能，包括数据表、页面和测试。
+- **所有文本都是消息。** 界面文本放在 `src/i18n/messages/<language>/` 中，每种语言一份，从不写在代码里。
+- **所有环境变量都会校验。** `src/lib/env-schema.ts` 声明了全部环境变量，缺失或格式错误时应用会拒绝启动。
+
+<ProNote>
+
+Pro 把每个模块放在独立的文件中，通过简短的列表项接入共享代码，因此移除一个模块不会影响其余部分。参见 [Pro 模块](/pro/modules)。
+
+</ProNote>
+
+## 下一步
+
+在[命令参考](/reference/commands)中查看所有命令。

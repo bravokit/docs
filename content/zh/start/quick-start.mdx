@@ -1,0 +1,65 @@
+export const meta = {
+  title: "快速开始",
+  description:
+    "几分钟内在你的电脑上运行 Kitewell，自带演示账号、本地邮件收件箱和测试计费。无需任何外部账号。",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+## 你需要准备
+
+- [Node.js](https://nodejs.org) 22.12 或更高版本。
+- [pnpm](https://pnpm.io)：运行一次 `corepack enable`，之后会自动使用项目锁定的版本。
+- [Docker](https://www.docker.com/products/docker-desktop/)，并保持运行，用于本地的 PostgreSQL 数据库。如果你已有 PostgreSQL 服务器，也可以改用它（见下文）。
+
+## 运行
+
+在项目目录中执行：
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm dev:setup
+```
+
+```bash
+pnpm dev
+```
+
+`pnpm dev:setup` 会创建带有随机密钥的 `.env`，在 Docker 中启动 PostgreSQL，执行数据库迁移，并添加一个演示账号。重复运行也是安全的。
+
+打开 http://localhost:3000，用 setup 打印出的演示账号登录，或者注册你自己的账号。
+
+<ProNote>
+
+在全新的副本上，`pnpm dev:setup` 会先列出 Pro 模块的清单，默认全部勾选。取消勾选产品用不到的模块，它们会在你开始构建之前被移除。参见 [Pro 模块](/pro/modules)。
+
+</ProNote>
+
+## 无需外部账号即可体验全部功能
+
+- **邮件**（注册确认、重置密码、魔法链接、邀请）会写入 `.outbox/`，其中的链接会打印在运行 `pnpm dev` 的终端里。
+- **计费**使用内置的测试结账页和客户门户（`BILLING_PROVIDER=local`）。在“设置 > 计费”中可以订阅、切换套餐、取消，以及模拟付款失败。
+
+准备好接入真实支付和邮件时，请在部署前连接 Stripe 和邮件服务商。
+
+## 遇到问题时
+
+先运行：
+
+```bash
+pnpm dev:doctor
+```
+
+它会检查 Node.js、pnpm、`.env`、数据库及其迁移，以及测试用浏览器，并给出每个问题的修复方法。
+
+- **数据库超时，或 `pnpm db:migrate` 没有任何提示就失败**：在某些电脑上，`localhost` 只解析到 IPv6 地址 `::1`，而 Docker 中的 PostgreSQL 不响应这个地址。把 `.env` 中 `DATABASE_URL` 的 `localhost` 改成 `127.0.0.1`。`pnpm dev:setup` 检测到这种情况时会自动修改。
+- **出现 `Unsupported engine` 或 `Node.js 22.12 or newer is required`**：终端使用的 Node.js 或 pnpm 版本过旧。安装当前的 Node.js LTS，运行 `corepack enable`，然后打开一个新终端。
+- **出现 `Docker isn't running`**：启动 Docker Desktop，再运行一次 `pnpm dev:setup`。如果要使用已有的 PostgreSQL 服务器，在 `.env` 中设置 `DATABASE_URL`，setup 就会跳过 Docker。
+- **5432 端口已被占用**：另一个 PostgreSQL 正在运行。停止它，或者在 `.env` 中设置另一个 `POSTGRES_PORT`，并在 `DATABASE_URL` 中使用同一端口。
+
+## 下一步
+
+在[项目结构](/start/project-structure)中熟悉代码。

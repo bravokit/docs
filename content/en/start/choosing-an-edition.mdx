@@ -1,0 +1,50 @@
+export const meta = {
+  title: "Kitewell or Pro?",
+  description:
+    "What each edition includes, so you can choose the one your product needs. You can start with Kitewell and move to Pro later.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+Both editions are the same codebase. Pro adds optional modules on top of Kitewell; it doesn't
+change how the core works. Choose by the features your product needs now.
+
+## What both editions include
+
+Everything on [What Kitewell is](/start/introduction): sign-in with email, magic links, Google and
+GitHub; organizations with roles and invitations; Stripe billing with plan limits; email through
+SMTP or Resend; background jobs; the product shell; the marketing site; English and Chinese; and
+the tests.
+
+## What Kitewell Pro adds
+
+| Module             | What it adds                                                                   |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Account security   | Two-factor sign-in, passkeys, signed-in devices, email change, security emails |
+| Admin              | Operators at `/admin`: search, ban, sign in as a user, an operator log         |
+| Enterprise sign-in | Microsoft, Apple and any OpenID Connect provider                               |
+| Paddle             | Paddle billing: merchant of record, Alipay subscriptions, promo codes          |
+| Trials and seats   | Free trials with reminder emails; per-member subscriptions                     |
+| Uploads            | Pictures, logos and attachments, on S3-compatible or local storage             |
+| Activity log       | Settings > Activity: who did what, with filters and CSV export                 |
+| API                | API keys and a public REST API (`/api/v1`) with rate limits                    |
+| Webhooks           | Settings > Webhooks: signed event deliveries with retries and a delivery log   |
+| Usage billing      | Metered API requests, credit packs and overage                                 |
+| Single sign-on     | SAML per organization, SCIM, and required two-factor or SSO                    |
+
+Each module is optional: a project can [leave out](/pro/modules) the ones it doesn't need.
+
+## How to choose
+
+- **Kitewell** fits when your product needs sign-in, teams and subscriptions, and you'll build the
+  rest yourself. It's free and open source.
+- **Kitewell Pro** fits when your customers expect what the modules above provide, such as
+  business customers asking for single sign-on, an API or audit trails, or when you sell through
+  Paddle. Building those yourself is weeks of work, each with security details to get right.
+
+You can start with Kitewell and move to Pro later: Pro is Kitewell plus modules, so your own
+features carry over.
+
+## Next
+
+Run a copy on your computer with the [quick start](/start/quick-start).

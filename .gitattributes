@@ -1,0 +1,8 @@
+# Keep LF line endings in every checkout, including Windows with core.autocrlf=true.
+# Prettier enforces LF, so CRLF checkouts would fail `pnpm format:check`.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff2 binary

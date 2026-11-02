@@ -1,0 +1,69 @@
+export const meta = {
+  title: "Pro modules",
+  description:
+    "The optional modules in Kitewell Pro, and how to leave out the ones your product doesn't need, at setup or later.",
+  editions: ["pro"],
+  checked: { pro: "2.0.0" },
+};
+
+Everything beyond the core (sign-in, organizations, billing, email, jobs) is an optional module:
+its own files, plugged into shared code through a few list entries. Taking out the modules your
+product doesn't need leaves less code to understand, update and secure.
+
+## The modules
+
+| Module               | What it adds                                                                   | Needs              |
+| -------------------- | ------------------------------------------------------------------------------ | ------------------ |
+| `account-security`   | Two-factor sign-in, passkeys, signed-in devices, email change, security emails |                    |
+| `admin`              | Operators at `/admin`: search, ban, sign in as, operator log                   |                    |
+| `enterprise-sign-in` | Microsoft, Apple and any OpenID Connect provider, app-wide                     |                    |
+| `paddle`             | Paddle billing (`BILLING_PROVIDER=paddle`)                                     |                    |
+| `trials-seats`       | Trial reminder emails; per-member subscriptions following the members          |                    |
+| `uploads`            | Pictures, logos and attachments on S3 or local storage                         |                    |
+| `activity`           | Settings > Activity                                                            |                    |
+| `api`                | API keys and `/api/v1`                                                         | `usage`            |
+| `webhooks`           | Settings > Webhooks                                                            |                    |
+| `usage`              | Metered API requests, credit packs, overage                                    |                    |
+| `sso`                | SAML per organization, SCIM, required two-factor or SSO                        | `account-security` |
+
+## Choosing at setup
+
+On a fresh copy, `pnpm dev:setup` shows a checklist with every module ticked. Untick the ones the
+project doesn't need, and they're removed before you build anything on them. It asks only the
+first time (before `.env` exists) and only in an interactive terminal, so CI keeps everything.
+
+## Removing one later
+
+```bash
+pnpm module:remove webhooks
+```
+
+Without a name it shows the checklist; `--list` lists the modules still installed, and `--yes`
+skips the confirmation. A module that needs the one being removed goes too, and the command says
+so before asking: removing `usage` also removes `api`.
+
+It needs a clean git working tree (commit first, or pass `--force`), so the removal is one change
+you can review with `git diff`. It deletes the module's files and npm packages and takes out what
+pointed at them: imports, list entries, tables, message areas and keys. Where it finds a use it
+can't take out safely, such as your own code calling the module, it stops before changing anything
+and names the file and line. Then run:
+
+```bash
+pnpm check
+```
+
+<Note>
+
+The module's database tables stay; empty, they're harmless. To drop them, run `pnpm auth:generate` and `pnpm db:generate`, and read the migration before applying it: it deletes those tables and their data.
+
+</Note>
+
+## Getting one back
+
+Revert the commit that removed it, which is clean while little was built on top. Later, copy its
+files back from your copy of Kitewell Pro. After merging a new Kitewell Pro version, run
+`pnpm module:remove` again for modules the merge brought back.
+
+## Next
+
+See every command, Pro's included, in the [command reference](/reference/commands).

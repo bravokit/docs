@@ -1,0 +1,65 @@
+export const meta = {
+  title: "Project structure",
+  description:
+    "Where each part of Kitewell lives, and the few rules that keep the code easy to change: thin pages, features in their own folders, one folder per vendor.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+## The folders
+
+```text
+src/
+├─ app/                  routes only; pages stay thin
+│  ├─ [locale]/          every page, once per language (/pricing, /zh/pricing):
+│  │  ├─ (marketing)/    landing, pricing, terms, privacy
+│  │  ├─ (auth)/         sign-in, sign-up, password reset
+│  │  ├─ (setup)/        create or pick an organization, accept an invitation, /account
+│  │  ├─ (app)/          the product: dashboard, projects, settings (needs an organization)
+│  │  └─ billing/local/  test checkout and portal for BILLING_PROVIDER=local
+│  └─ api/               auth endpoints, billing webhook, health check, jobs cron route
+├─ features/<name>/      product logic: actions.ts, queries.ts, components/
+├─ components/ui/        shadcn/ui components (yours to edit)
+├─ config/site.ts        product name, company, support email
+├─ i18n/                 languages, and the messages with every text
+└─ lib/
+   ├─ auth/              Better Auth setup, session and organization helpers
+   ├─ billing/           plans, entitlements, payment providers, webhooks
+   ├─ db/                Drizzle schema and client
+   ├─ email/             sending and templates
+   ├─ jobs/              background jobs: the queue, email retries, daily cleanup
+   ├─ events/            recordEvent(): what happened in an organization
+   ├─ notifications/     notify(): in-app notifications and emails
+   └─ env-schema.ts      every environment variable, validated at startup
+drizzle/                 SQL migrations
+e2e/                     Playwright tests
+scripts/                 setup, doctor, seed, feature, email, worker and migration scripts
+docs/                    one page per area
+```
+
+## The rules that keep it easy to change
+
+- **Pages stay thin.** A page in `src/app/` reads the session and calls into its feature in
+  `src/features/`, where the queries, actions and components live.
+- **Each vendor is imported in one folder.** Only `lib/auth` imports the auth library, only
+  `lib/billing` the payment provider, only `lib/email` the email libraries and only `lib/jobs` the
+  job queue. Replacing one touches one folder.
+- **Every record belongs to an organization.** Queries filter by the organization from the
+  session, never by an ID sent from the browser, and a record from another organization is "not
+  found".
+- **Projects is the template.** `src/features/projects` shows the pattern every feature follows:
+  `pnpm new:feature reports` copies it into a new feature with its table, pages and tests.
+- **Every text is a message.** Interface text lives in `src/i18n/messages/<language>/`, in every
+  language, never in code.
+- **Every environment variable is validated.** `src/lib/env-schema.ts` declares them all, and the
+  app refuses to start with a missing or malformed one.
+
+<ProNote>
+
+Pro adds each module in files of its own, plugged into shared code through short list entries, so a module can be removed without touching the rest. See [Pro modules](/pro/modules).
+
+</ProNote>
+
+## Next
+
+See every command in the [command reference](/reference/commands).

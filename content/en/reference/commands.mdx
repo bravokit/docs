@@ -1,0 +1,58 @@
+export const meta = {
+  title: "Commands",
+  description: "Every pnpm command in Kitewell and Kitewell Pro, and what it does.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+Run each command from the project's folder.
+
+## Setup and development
+
+| Command                   | What it does                                              |
+| ------------------------- | --------------------------------------------------------- |
+| `pnpm dev:setup`          | One-time local setup: `.env`, database, demo account      |
+| `pnpm dev:doctor`         | Check the local setup and explain how to fix each problem |
+| `pnpm new:feature <name>` | Create a feature by copying the Projects example          |
+| `pnpm dev`                | Start the dev server                                      |
+| `pnpm build`              | Production build                                          |
+| `pnpm start`              | Serve the production build                                |
+
+## Checks and tests
+
+| Command         | What it does                                                      |
+| --------------- | ----------------------------------------------------------------- |
+| `pnpm check`    | Typecheck, lint, format check and unit tests                      |
+| `pnpm test`     | Unit tests (Vitest)                                               |
+| `pnpm test:e2e` | End-to-end tests (Playwright; builds the app, needs the database) |
+| `pnpm format`   | Format every file with Prettier                                   |
+
+## Database
+
+| Command                  | What it does                                                     |
+| ------------------------ | ---------------------------------------------------------------- |
+| `pnpm db:up`             | Start local PostgreSQL                                           |
+| `pnpm db:down`           | Stop local PostgreSQL                                            |
+| `pnpm db:generate`       | Write a migration from schema changes                            |
+| `pnpm db:migrate`        | Apply pending migrations                                         |
+| `pnpm db:migrate:deploy` | Apply migrations in production                                   |
+| `pnpm db:seed`           | Add the demo account (local only)                                |
+| `pnpm db:studio`         | Browse the database in Drizzle Studio                            |
+| `pnpm auth:generate`     | Regenerate the auth tables after changing auth plugins or fields |
+
+## Email and jobs
+
+| Command                       | What it does                                        |
+| ----------------------------- | --------------------------------------------------- |
+| `pnpm email:test <to>`        | Send a test email with the configured transport     |
+| `pnpm email:oauth <provider>` | Get the OAuth2 refresh token for Gmail or Microsoft |
+| `pnpm jobs:work`              | Process background jobs in their own process        |
+
+## Kitewell Pro only
+
+| Command                     | What it does                                                           |
+| --------------------------- | ---------------------------------------------------------------------- |
+| `pnpm module:remove <name>` | Remove a module the project doesn't need ([Pro modules](/pro/modules)) |
+| `pnpm admin:grant <email>`  | Make an account an operator, who can open `/admin`                     |
+| `pnpm admin:revoke <email>` | Undo `admin:grant`                                                     |
+| `pnpm auth:apple-secret`    | Create the client secret Sign in with Apple requires                   |

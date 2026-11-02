@@ -1,0 +1,15 @@
+# This repository is a single project; the `packages` entry makes that explicit. pnpm 10+
+# doesn't need it, but pnpm 9 and older refuse to run anything without it ("packages field
+# missing or empty"), hiding the clearer version checks in scripts/setup.mjs.
+packages:
+  - "."
+
+# Dependencies allowed to run install scripts. pnpm blocks all others by default.
+allowBuilds:
+  esbuild: true
+  sharp: false
+  unrs-resolver: false
+  # Native tools next-intl installs for its optional message extractor, which this project
+  # doesn't use; they ship prebuilt binaries and need no install script.
+  "@parcel/watcher": false
+  "@swc/core": false

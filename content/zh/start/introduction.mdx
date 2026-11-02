@@ -1,0 +1,41 @@
+export const meta = {
+  title: "Kitewell 是什么",
+  description:
+    "Kitewell 是用于构建 SaaS 产品的 Next.js 起步套件。本页介绍它开箱即有的功能，以及这份文档的组织方式。",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+Kitewell 提供了每个 SaaS 产品都需要、并且已经协同工作的部分：登录、团队、订阅计费、事务邮件、后台任务、控制台和营销网站。你可以直接投入只有你能做的那部分产品。
+
+## 开箱即有的功能
+
+- **登录**：邮箱和密码（含邮箱验证和重置密码）、魔法链接，以及 Google 或 GitHub 登录。
+- **组织**：所有者、管理员和成员，邮件邀请，以及组织切换。每条记录都属于一个组织，每个查询都限定在该组织内。
+- **计费**：免费版、Pro 和 Business 三个套餐，按月或按年，通过 Stripe 或内置的本地测试支付。套餐限额在服务器端检查，webhook 经过签名且只处理一次。
+- **邮件**：通过任意 SMTP 服务器（QQ 邮箱、Gmail、Outlook、Microsoft 365 等）或 Resend 发送模板邮件。发送失败会自动重试。
+- **后台任务**：位于你的 PostgreSQL 数据库中的任务队列，可由应用服务器、独立 worker 或定时路由运行，内置邮件重试和每日清理。
+- **产品外壳**：响应式侧边栏、控制台、账号和组织设置、深色模式，以及一个演示如何照着写功能的示例功能（“项目”）。
+- **营销**：首页和定价页、法律页面模板、sitemap、robots 和分享图片。
+- **多语言**：从界面到邮件，全面支持英语和简体中文。
+- **质量**：TypeScript 严格模式、经过校验的环境变量、单元测试和端到端测试，在 GitHub Actions 上运行。
+
+技术栈包括 Next.js 16、React 19、Tailwind CSS v4、shadcn/ui、Better Auth、Drizzle ORM、PostgreSQL、pg-boss、Stripe、Nodemailer、Resend、React Email 和 next-intl。
+
+## 两个版本
+
+**Kitewell** 以 MIT 许可证开源：一个完整的产品，你可以在它之上构建并出售。**Kitewell Pro** 是商业版，基于同一份代码，提供可选模块，例如两步验证登录、管理后台、Paddle 计费、文件上传、公开 API、对外 webhook 和单点登录。Kitewell 中的一切在 Pro 中都有。
+
+[选 Kitewell 还是 Pro？](/start/choosing-an-edition)对两者做了比较。
+
+## 这份文档的组织方式
+
+- **入门**：选择版本，在你的电脑上运行一份副本，并熟悉代码结构。
+- **Kitewell Pro**：Pro 模块，以及如何去掉用不到的模块。
+- **参考**：所有命令。
+
+每个页面顶部标明适用的版本，底部标明核对时所依据的版本号。
+
+## 下一步
+
+按照[快速开始](/start/quick-start)在你的电脑上运行一份副本。

@@ -1,0 +1,79 @@
+export const meta = {
+  title: "Quick start",
+  description:
+    "Run Kitewell on your computer in a few minutes, with a demo account, a local email outbox and test billing. No external accounts needed.",
+  editions: ["kitewell", "pro"],
+  checked: { kitewell: "1.0.0", pro: "2.0.0" },
+};
+
+## What you need
+
+- [Node.js](https://nodejs.org) 22.12 or newer.
+- [pnpm](https://pnpm.io): run `corepack enable` once and the version the project pins is used
+  automatically.
+- [Docker](https://www.docker.com/products/docker-desktop/), running, for the local PostgreSQL
+  database. If you already have a PostgreSQL server, you can use it instead (see below).
+
+## Run it
+
+In the project's folder:
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm dev:setup
+```
+
+```bash
+pnpm dev
+```
+
+`pnpm dev:setup` creates `.env` with a generated secret, starts PostgreSQL in Docker, applies the
+database migrations and adds a demo account. It's safe to run again.
+
+Open http://localhost:3000 and sign in with the demo account the setup printed, or create your
+own account.
+
+<ProNote>
+
+On a fresh copy, `pnpm dev:setup` first shows a checklist of the Pro modules, all ticked. Untick the ones your product doesn't need and they're removed before you build on them. See [Pro modules](/pro/modules).
+
+</ProNote>
+
+## Try everything without external accounts
+
+- **Emails** (confirmations, password resets, magic links, invitations) are written to `.outbox/`,
+  and their links are printed in the terminal running `pnpm dev`.
+- **Billing** uses a built-in test checkout and customer portal (`BILLING_PROVIDER=local`). In
+  Settings > Billing you can subscribe, switch plans, cancel and simulate a failed payment.
+
+When you're ready for real payments and email, connect Stripe and an email provider before you
+deploy.
+
+## When something goes wrong
+
+Start with:
+
+```bash
+pnpm dev:doctor
+```
+
+It checks Node.js, pnpm, `.env`, the database and its migrations, and the test browser, and prints
+how to fix each problem.
+
+- **The database times out, or `pnpm db:migrate` fails with no message**: on some machines
+  `localhost` resolves only to the IPv6 address `::1`, which Docker's PostgreSQL doesn't answer.
+  Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` in `.env`. `pnpm dev:setup` changes it
+  for you when it detects this.
+- **`Unsupported engine` or `Node.js 22.12 or newer is required`**: the terminal runs an older
+  Node.js or pnpm. Install a current Node.js LTS, run `corepack enable`, and open a new terminal.
+- **`Docker isn't running`**: start Docker Desktop and run `pnpm dev:setup` again. To use a
+  PostgreSQL server you already have, set `DATABASE_URL` in `.env`; setup then skips Docker.
+- **Port 5432 is already in use**: another PostgreSQL is running. Stop it, or set a different
+  `POSTGRES_PORT` in `.env` and the same port in `DATABASE_URL`.
+
+## Next
+
+Find your way around the code in [Project structure](/start/project-structure).
